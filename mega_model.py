@@ -96,8 +96,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.single_job:
-        submit_job(args.folder, ncores=ncores)
+        submit_job(args.folder, ncores=args.ncores)
     elif args.join_json:
         combine_data(args.folder)
     else:
-        main(args.folder, ncores=ncores)
+        main(args.folder, ncores=args.ncores)
