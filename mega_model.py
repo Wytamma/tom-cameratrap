@@ -12,17 +12,17 @@ import sys
 import json
 
 
-def submit_job(directory, mem="12gb"):
+def submit_job(directory, mem="12gb", ncores="1"):
     image_dir = directory.replace(" ", "\ ")  # correctly format spaces in path i.e \
     basename = os.path.basename(directory)
     cmd = f"""set -e;
     module load anaconda3/2019.10; 
     source ~/.bashrc;
     conda activate cameratraps-detector; 
-    PYTHONPATH=/home/jc449852/CameraTraps:/home/jc449852/ai4eutils python CameraTraps/detection/run_tf_detector_batch.py CameraTraps/megadetector_v4_1_0.pb "{image_dir}" "{image_dir}/{basename}.json" --recursive"""
+    PYTHONPATH=/home/jc449852/CameraTraps:/home/jc449852/ai4eutils python CameraTraps/detection/run_tf_detector_batch.py CameraTraps/megadetector_v4_1_0.pb "{image_dir}" "{image_dir}/{basename}.json" --recursive --ncores {ncores}"""
     job_name = basename.replace(" ", "_")
     print(f"Submitting Job {job_name}")
-    os.system(f'echo "{cmd}" | qsub -N {job_name} -l walltime=600:00:00 -l mem={mem}')
+    os.system(f'echo "{cmd}" | qsub -N {job_name} -l walltime=600:00:00 -l mem={mem} -l ncpus={ncores}')
 
 
 def get_folders_from_path(folder):
@@ -54,7 +54,7 @@ def combine_data(folder):
     )
 
 
-def main(folder):
+def main(folder, ncores="1"):
     dirs = get_folders_from_path(folder)
     if (
         input(
@@ -65,7 +65,7 @@ def main(folder):
         print("Aborted!")
         return None
     for image_dir in dirs:
-        submit_job(image_dir)
+        submit_job(image_dir, ncores=ncores)
 
 
 if __name__ == "__main__":
@@ -87,11 +87,17 @@ if __name__ == "__main__":
         action="store_true",
         help="Run the specified folder as a single job.",
     )
+    parser.add_argument(
+        "--ncores",
+        default="1",
+        type=str,
+        help="Number of cores to use.",
+    )
     args = parser.parse_args()
 
     if args.single_job:
-        submit_job(args.folder)
+        submit_job(args.folder, ncores=ncores)
     elif args.join_json:
         combine_data(args.folder)
     else:
-        main(args.folder)
+        main(args.folder, ncores=ncores)
